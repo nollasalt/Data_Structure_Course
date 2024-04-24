@@ -10,7 +10,7 @@
 
 #include <utility>
 using namespace std;
-const static string dataFile="data.dat";
+const static string dataFile="res/data.dat";
 struct file
 {
     file* parent=nullptr;
