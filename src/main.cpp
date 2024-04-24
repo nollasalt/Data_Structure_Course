@@ -14,16 +14,7 @@ int main(){
 
 void dfs(int fa,int u,int p,vector<vector<node>> &graph)
 {
-    static
-    for(auto temp:graph[u])
-    {
-        int &v=temp.first;
-        int &weight=temp.second;
-        if(v==fa) continue;
-        if(p-weight<pMin){
 
-        }
-    }
 }
 void solve(int source,vector<vector<node>> &graph)
 {
