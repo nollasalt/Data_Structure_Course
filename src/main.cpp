@@ -7,6 +7,6 @@ using namespace std;
 signed main() {
     DAG g;
     g.topsort();
-    g.branch_bound();
+    g.backtracking(1,0);
     g.output_bst();
 }

@@ -151,8 +151,6 @@ void DAG::topsort()
         cout << "图中有环路！不符合要求！\n";
         return;
     }
-    //for (int i = 1; i <= n; i++)
-    //cout << "top " << i << " " << dig[i] << "\n";
 }
 
 
@@ -177,8 +175,6 @@ void DAG::backtracking(int level, int cnt)
         backtracking(2, 0);
     }
     else {//其他层  如果到v 不行 则在 u放
-        int j;
-        int flag = 0;
 
         //求u结点的最大压力
         int temp_pre = -1;//临时变量pre 用来回溯！
@@ -217,14 +213,14 @@ void DAG::branch_bound()
 {//分支定界 活结点--扩展结点-- 子集空间树
     btnode* enode = new btnode(Pmax, 2);//活结点
     int level = 2;
-    while (level <= n - 1)
+    while (level < n)
     {//进行活结点的拓展
         int vert = dig[level];//该层扩展的节点
         int temp_press = -1;
         int flag = 0;
 
         //求扩展结点的压力
-        for (int k = 1; k <= level - 1; k++) {
+        for (int k = 1; k < level ; k++) {
             for (auto& e : nodes[dig[k]].edges) {
                 if (e.to == vert) {
                     btnode* p = enode;
