@@ -1,27 +1,12 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#define ll long long
-
-//解空间: 某点处放booster 1 或者 不放 0;
-/*
-3. 如果存在一个点x , x有多条入边e[1]..e[n] , x处的压力`p[x] = max(p[x], p[e[i].from] - e[i].cost) `
-即x处的压力为到达x处的压力中的最大值
-4. 图中每条边上的任何一点都要能到达 , 一个节点的压力是最大到达压力 , 但
-每条边都是一个有效的管道 也要能完整的运输
-例如 如果存在一个点x ,  x处的压力>Pmin , 但存在一条边 e , p[e.from] - e.cost < Pmin 这也是不合法的
-*/
-//复杂度 O（2^n）
-//空间 O(最长路径) O(2^n）
-
-
 struct btnode {//用于分支定界的子集树
     btnode* parent;//指向父节点
     int press;//
     int level;//子集树层级
     bool bst_here;//是否放放大器
     int bstnum;//优先级 从根到节点x的路径上的bst个数
-    int max_to_cost;
 
     btnode() {
         parent = nullptr;
@@ -46,30 +31,17 @@ public:
     ~Edge() {}
 };
 
-class inEdge {
-public:
-    int from;// 终点编号
-    int cost;// 长度
-    inEdge(int from, int cost) : from(from), cost(cost) {}
-    ~inEdge() {}
-};
-
-
 class Node {
 public:
     vector<Edge> edges;//记录所有出边
     int press;
     bool booster;
     int max_to_cost;
-    vector<inEdge> inedges;//记录入边 用来更新press
-    int toponum;//按拓扑序是第几
     Node() {
         press = 0;
         booster = false;
         edges.clear();
-        inedges.clear();
         max_to_cost = 0;
-        toponum = 0;
     }
     ~Node() {}
 };
@@ -114,8 +86,6 @@ public:
             //修改入度
             in_deg[v]++;
             nodes[u].max_to_cost = max(nodes[u].max_to_cost, w);
-            //更新入边
-            nodes[v].inedges.emplace_back(u, w);
         }
         nodes[1].press = Pmax;
         place_bst[1] = true;
@@ -140,7 +110,6 @@ void DAG::topsort()
     }
     while (!q.empty()) {
         int u = q.front(); q.pop();
-        nodes[u].toponum = cnt;
         dig[cnt++] = u;//排序
         for (auto e : nodes[u].edges) {
             if (--in_deg[e.to] == 0)
@@ -175,24 +144,21 @@ void DAG::backtracking(int level, int cnt)
         backtracking(2, 0);
     }
     else {//其他层  如果到v 不行 则在 u放
-
-        //求u结点的最大压力
-        int temp_pre = -1;//临时变量pre 用来回溯！
-        for (auto& c : nodes[u].inedges) {
-            int f = c.from;
-            if (nodes[f].toponum < nodes[u].toponum)
-            {//必须是拓扑序前面的
-                temp_pre = max(temp_pre, nodes[u].press - c.cost);
+        int maxPress = -1;//临时变量pre 用来回溯！
+        for (int k = 1; k < level; k++) {//求 前面到
+            for (auto& x : nodes[dig[k]].edges) {
+                if (x.to == u)
+                    maxPress = max(maxPress, nodes[dig[k]].press - x.cost);
             }
         }
 
-        if (temp_pre >= Pmax) {
+        if (maxPress >= Pmax) {
             backtracking(level + 1, cnt);
             return;
         }
-        if(temp_pre - nodes[u].max_to_cost >= Pmin)
+        if(maxPress - nodes[u].max_to_cost >= Pmin)
         {
-            nodes[u].press = temp_pre;
+            nodes[u].press = maxPress;
             nodes[u].booster = false;
             backtracking(level + 1, cnt);
         }
@@ -210,15 +176,16 @@ void DAG::backtracking(int level, int cnt)
 
 //最小耗费 分支定界
 void DAG::branch_bound()
-{//分支定界 活结点--扩展结点-- 子集空间树
+{
+    //分支定界 活结点--扩展结点-- 子集空间树
     btnode* enode = new btnode(Pmax, 2);//活结点
     int level = 2;
     while (level < n)
     {//进行活结点的拓展
         int vert = dig[level];//该层扩展的节点
-        int temp_press = -1;
-        int flag = 0;
+        int maxPress = -1;
 
+        //dig[k]：拓扑序为k的点
         //求扩展结点的压力
         for (int k = 1; k < level ; k++) {
             for (auto& e : nodes[dig[k]].edges) {
@@ -228,17 +195,13 @@ void DAG::branch_bound()
                     for (int j = level - 1; j > k; j--)
                         p = p->parent;
 
-                    temp_press = max(temp_press, p->press - e.cost);
+                    maxPress = max(maxPress, p->press - e.cost);
                 }
             }
         }
 
-        //限界函数 -最大花费 小必须放
-        if (temp_press - nodes[vert].max_to_cost < Pmin) {
-            flag = 1;
-        }
-        if (flag == 0) {
-            btnode* t = new btnode(temp_press, level + 1, enode, enode->bstnum);
+        if (maxPress - nodes[vert].max_to_cost >= Pmin) {
+            btnode* t = new btnode(maxPress, level + 1, enode, enode->bstnum);
             pq.push(t);
         }
         btnode* tt = new btnode(Pmax, level + 1, enode, enode->bstnum + 1);
@@ -262,6 +225,6 @@ void DAG::output_bst()
 {
     for (int i = 1; i <= n; i++) {
         if (place_bst[i])
-            cout << "node " << i << " \n";
+            cout << "node " << i << " ";
     }
 }
