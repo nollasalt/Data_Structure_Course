@@ -124,7 +124,6 @@ public:
     int best_ans;//最优解 数目
 
     void topsort();//用拓扑排序 来确定先后关系
-    void recountpre();
     void output_bst();//输出booster
     void backtracking(int level, int cnt);//回溯解决
     void branch_bound();//分支定界解决
@@ -183,7 +182,6 @@ void DAG::backtracking(int level, int cnt)
 
         //求u结点的最大压力
         int temp_pre = -1;//临时变量pre 用来回溯！
-            //求press[u]  优化 用入边
         for (auto& c : nodes[u].inedges) {
             int f = c.from;
             if (nodes[f].toponum < nodes[u].toponum)
@@ -192,36 +190,24 @@ void DAG::backtracking(int level, int cnt)
             }
         }
 
-        for (j = 0; j < 2; j++)
-        {//进行两种决策
-            //剪枝1
-            if (temp_pre >= Pmax) {
-                backtracking(level + 1, cnt);
-                break;
-            }
-
-            if (j==0&&temp_pre - nodes[u].max_to_cost < Pmin) {
-                flag = 1;
-            }
-
-            //决策 put
-            if (j == 1 || flag == 1) {//放
-                cnt++;
-                nodes[u].press = Pmax;
-                nodes[u].booster = true;
-                //剪枝
-                if (cnt >= best_ans)
-                    return;
-                else {
-                    backtracking(level + 1, cnt);
-                }
-            }
-            //not put
-            else if (j == 0) {//对应的 j==0 && flag!=1
-                nodes[u].press = temp_pre;
-                nodes[u].booster = false;
-                backtracking(level + 1, cnt);
-            }
+        if (temp_pre >= Pmax) {
+            backtracking(level + 1, cnt);
+            return;
+        }
+        if(temp_pre - nodes[u].max_to_cost >= Pmin)
+        {
+            nodes[u].press = temp_pre;
+            nodes[u].booster = false;
+            backtracking(level + 1, cnt);
+        }
+        cnt++;
+        nodes[u].press = Pmax;
+        nodes[u].booster = true;
+        //剪枝
+        if (cnt >= best_ans)
+            return;
+        else {
+            backtracking(level + 1, cnt);
         }
     }
 }
@@ -250,16 +236,11 @@ void DAG::branch_bound()
                 }
             }
         }
+
         //限界函数 -最大花费 小必须放
         if (temp_press - nodes[vert].max_to_cost < Pmin) {
             flag = 1;
         }
-        //check 到 邻接点是否符合要求
-        /*for (auto& e : nodes[vert].edges) {
-            if (temp_press < Pmin + e.cost) {
-                flag = 1; break;
-            }
-        }*/
         if (flag == 0) {
             btnode* t = new btnode(temp_press, level + 1, enode, enode->bstnum);
             pq.push(t);
@@ -287,23 +268,4 @@ void DAG::output_bst()
         if (place_bst[i])
             cout << "node " << i << " \n";
     }
-}
-void DAG::recountpre() {
-    for (int i = 2; i <= n; i++) {
-        int v = dig[i];
-        if (place_bst[v]) {
-            nodes[v].press = Pmax;
-        }
-        else {
-            nodes[v].press = 0;
-            for (int j = 1; j < i; j++) {
-                for (auto& e : nodes[dig[j]].edges) {
-                    if (e.to == v) {
-                        nodes[v].press = max(nodes[v].press, nodes[dig[j]].press - e.cost);
-                    }
-                }
-            }
-        }
-    }
-
 }
