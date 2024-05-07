@@ -6,4 +6,5 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(Data_Structure_Course src/main.cpp
         src/myAlgorithm.h
         src/file.h
+        src/solve.h
 )
